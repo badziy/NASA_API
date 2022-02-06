@@ -8,9 +8,10 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 
+import java.io.BufferedInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.net.URL;
 import java.util.Arrays;
 
 public class Main {
@@ -37,19 +38,20 @@ public class Main {
         String url = posts.getUrl();
         String[] mySplit = url.split("/");
         request = new HttpGet(url);
-        String jpegBody="";
         String fileName=null;
         if (posts.getMedia_type().equals("video")){
             fileName = posts.getTitle()+"_video.html";
         } else if (posts.getMedia_type().equals("image")){
             fileName = mySplit[mySplit.length-1];
             request.setHeader(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType());
-            response = httpClient.execute(request);
-            jpegBody = new String(response.getEntity().getContent().readAllBytes(), StandardCharsets.UTF_8);
         }
-        try (FileOutputStream fos = new FileOutputStream(fileName)) {
-            byte[] bytes = jpegBody.getBytes();
-            fos.write(bytes, 0, bytes.length);
+        try (BufferedInputStream in = new BufferedInputStream(new URL(url).openStream());
+             FileOutputStream fos = new FileOutputStream(fileName)) {
+            final byte data[] = new byte[1024];
+            int count;
+            while ((count = in.read(data, 0, 1024)) != -1) {
+                fos.write(data, 0, count);
+            }
         } catch (IOException ex) {
             System.out.println(ex.getMessage());
         }
